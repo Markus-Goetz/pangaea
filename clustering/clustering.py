@@ -112,22 +112,22 @@ def cluster_outliers_combined(data, variables, outliers=OUTLIERS, outlier_vars=O
 
     return data
 
-# def make_source(data, variables):
-#     return bokeh.models.ColumnDataSource({var : data[var] for var in variables})
-#
-# def plot_variables(data, time, variables, formatted=FORMATTED, type='datetime'):
-#     plots = []
-#     for index, var in enumerate(variables):
-#         source = make_source(data, [time, var, formatted])
-#         hover  = bokeh.models.HoverTool(tooltips =[('index', '$index'), ('value', '@formatted -> $y')])
-#         figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, x_axis_type=type, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize', 'save', hover])
-#
-#         figure.line(time, var, source=source, color=bokeh.palettes.Spectral11[index], alpha=ALPHA)
-#         figure.xaxis.axis_label = 'time'
-#         figure.yaxis.axis_label = u'%s %s' % (var.split('_')[0], UNITS[index],)
-#
-#         plots.append(figure)
-#     return plots
+def make_source(data, variables):
+    return bokeh.models.ColumnDataSource({var : data[var] for var in variables})
+
+def plot_variables(data, time, variables, formatted=FORMATTED, type='datetime'):
+    plots = []
+    for index, var in enumerate(variables):
+        source = make_source(data, [time, var, formatted])
+        hover  = bokeh.models.HoverTool(tooltips =[('index', '$index'), ('value', '@formatted -> $y')])
+        figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, x_axis_type=type, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize', 'save', hover])
+
+        figure.line(time, var, source=source, color=bokeh.palettes.Spectral11[index], alpha=ALPHA)
+        figure.xaxis.axis_label = 'time'
+        figure.yaxis.axis_label = u'%s %s' % (var.split('_')[0], UNITS[index],)
+
+        plots.append(figure)
+    return plots
 
 def plot_matplot_variables(data, time, variables, formatted=FORMATTED, type='datetime'):
     for index, var in enumerate(variables):
@@ -177,7 +177,7 @@ def plot_matplot_clusters(data, time, variables, outliers=OUT_VARS, label=LABEL,
             matplotlib.patches.Rectangle(
                 (matplotlib.dates.date2num(clu.min()), 0,),
                 matplotlib.dates.date2num(clu.max()) - matplotlib.dates.date2num(clu.min()), 2,
-                alpha=0.6, facecolor='#cc3300', linewidth=0, edgecolor='#ffffff'#colors[cluster]
+                alpha=0.6, facecolor='#cc3300', linewidth=0, edgecolor='#ffffff'
             )
         )
 
@@ -192,153 +192,156 @@ def plot_matplot_clusters(data, time, variables, outliers=OUT_VARS, label=LABEL,
     ax.autoscale_view()
     fig.savefig('outliers.svg', format='svg', dpi=1200, bbox_inches='tight')
 
-#
-# def plot_standard_deviations(data, time, variables, outliers=OUTLIERS, formatted=FORMATTED, type='datetime'):
-#     plots = []
-#
-#     for index, var in enumerate(variables):
-#         source = make_source(data, [time, var, formatted])
-#         stddev = data[var].std()
-#
-#         color  = bokeh.palettes.Spectral11[index]
-#         hover  = bokeh.models.HoverTool(names=['data'], tooltips =[('index', '$index'), ('value', '@formatted -> $y')])
-#         figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, x_axis_type=type, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize', hover])
-#
-#         figure.xaxis.axis_label = 'time'
-#         figure.yaxis.axis_label = var
-#         figure.line(time, var, name='data', source=source, color=color, alpha=ALPHA)
-#         for c in range(-outliers, outliers + 1):
-#             if c == 0: continue
-#             figure.line(x=[data[time].iloc[0], data[time].iloc[-1]], y=[c * stddev, c * stddev], line_dash='4 2', color='black', alpha=ALPHA)
-#
-#         plots.append(figure)
-#     return plots
-#
-# def plot_clusters(data, time, variables, outliers=OUTLIERS, clusters=LABEL, formatted=FORMATTED, type='datetime', **kwargs):
-#     plots = []
-#     for index, var in enumerate(variables):
-#         source = make_source(data, [time, var, formatted])
-#         hover  = bokeh.models.HoverTool(tooltips =[('index', '$index'), ('value', '@formatted -> $y')])
-#         figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, x_axis_type=type, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize', hover])
-#         figure.xaxis.axis_label = 'time'
-#         figure.yaxis.axis_label = 'clusters - %d stddevs' % outliers
-#
-#         figure.line(time, var, source=source, color=bokeh.palettes.Spectral11[index], alpha=ALPHA)
-#         data_min = data[var].min()
-#         data_max = data[var].max()
-#
-#         for event in EVENTS:
-#             figure.line([event, event], [data_min, data_max], color='black', alpha=ALPHA, line_dash='4 2')
-#
-#         for i in range(0, data[clusters].max() + 1):
-#             label_index = (data[clusters] == i)
-#             time_scale = data[time][label_index]
-#             time_min = time_scale.min()
-#             time_max = time_scale.max()
-#
-#             figure.patch(
-#                 [time_min, time_min, time_max, time_max],
-#                 [data_min, data_max, data_max, data_min],
-#                 color='red', alpha=ALPHA, line_width=1
-#             )
-#
-#         plots.append(figure)
-#
-#     return plots
-#
-# def plot_fft(data, variables):
-#     plots = []
-#
-#     import scipy.fftpack
-#
-#     for var in variables:
-#         #fft = np.fft.rfft(data[var]).real * (1/np.sqrt(2*np.pi))
-#         fft = 2.0 / len(data) * np.abs(scipy.fftpack.fft(data[var]))
-#         x = np.array(range(0, len(data))) - len(data)
-#         figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize'])
-#         figure.xaxis.axis_label = 'frequency'
-#         figure.yaxis.axis_label = 'fft'
-#         figure.line(x, fft, alpha=ALPHA)
-#
-#         plots.append(figure)
-#
-#     return plots
-#
-# def precision(data, time=TIME, events=EVENTS, clusters=LABEL, tolerance=DELTA):
-#     known = {event for event in events}
-#     total_clusters = data[clusters].max()
-#
-#     for i in range(total_clusters + 1):
-#         cluster_index = (data[clusters] == i)
-#         found = data.loc[cluster_index, time]
-#
-#         found_min = found.min() - tolerance
-#         found_max = found.max() + tolerance
-#
-#         for event in known:
-#             if found_min <= event and event <= found_max:
-#                 known.remove(event)
-#                 break
-#
-#     return (len(events) - len(known)) / float(total_clusters) if total_clusters > 0 else 0.0
-#
-# def recall(data, time=TIME, events=EVENTS, clusters=LABEL, tolerance=DELTA):
-#     known = {event for event in events}
-#     total_clusters = data[clusters].max()
-#
-#     for i in range(total_clusters + 1):
-#         cluster_index = (data[clusters] == i)
-#         found = data.loc[cluster_index, time]
-#
-#         found_min = found.min() - tolerance
-#         found_max = found.max() + tolerance
-#
-#         for event in known:
-#             if found_min <= event and event <= found_max:
-#                 known.remove(event)
-#                 break
-#
-#     return (len(events) - len(known)) / float(len(events)) if len(events) > 0 else 0.0
-#
-# def f1(precision, recall):
-#     return 2 * (precision * recall) / (precision + recall) if precision + recall > 0 else 0.0
+
+def plot_standard_deviations(data, time, variables, outliers=OUTLIERS, formatted=FORMATTED, type='datetime'):
+    plots = []
+
+    for index, var in enumerate(variables):
+        source = make_source(data, [time, var, formatted])
+        stddev = data[var].std()
+
+        color  = bokeh.palettes.Spectral11[index]
+        hover  = bokeh.models.HoverTool(names=['data'], tooltips =[('index', '$index'), ('value', '@formatted -> $y')])
+        figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, x_axis_type=type, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize', hover])
+
+        figure.xaxis.axis_label = 'time'
+        figure.yaxis.axis_label = var
+        figure.line(time, var, name='data', source=source, color=color, alpha=ALPHA)
+        for c in range(-outliers, outliers + 1):
+            if c == 0: continue
+            figure.line(x=[data[time].iloc[0], data[time].iloc[-1]], y=[c * stddev, c * stddev], line_dash='4 2', color='black', alpha=ALPHA)
+
+        plots.append(figure)
+    return plots
+
+def plot_clusters(data, time, variables, outliers=OUTLIERS, clusters=LABEL, formatted=FORMATTED, type='datetime', **kwargs):
+    plots = []
+    for index, var in enumerate(variables):
+        source = make_source(data, [time, var, formatted])
+        hover  = bokeh.models.HoverTool(tooltips =[('index', '$index'), ('value', '@formatted -> $y')])
+        figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, x_axis_type=type, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize', hover])
+        figure.xaxis.axis_label = 'time'
+        figure.yaxis.axis_label = 'clusters - %d stddevs' % outliers
+
+        figure.line(time, var, source=source, color=bokeh.palettes.Spectral11[index], alpha=ALPHA)
+        data_min = data[var].min()
+        data_max = data[var].max()
+
+        for event in EVENTS:
+            figure.line([event, event], [data_min, data_max], color='black', alpha=ALPHA, line_dash='4 2')
+
+        for i in range(0, data[clusters].max() + 1):
+            label_index = (data[clusters] == i)
+            time_scale = data[time][label_index]
+            time_min = time_scale.min()
+            time_max = time_scale.max()
+
+            figure.patch(
+                [time_min, time_min, time_max, time_max],
+                [data_min, data_max, data_max, data_min],
+                color='red', alpha=ALPHA, line_width=1
+            )
+
+        plots.append(figure)
+
+    return plots
+
+def plot_fft(data, variables):
+    plots = []
+
+    import scipy.fftpack
+
+    for var in variables:
+        #fft = np.fft.rfft(data[var]).real * (1/np.sqrt(2*np.pi))
+        fft = 2.0 / len(data) * np.abs(scipy.fftpack.fft(data[var]))
+        x = np.array(range(0, len(data))) - len(data)
+        figure = bokeh.plotting.figure(width=WIDTH, height=HEIGHT, tools=['pan', 'wheel_zoom', 'box_zoom', 'reset', 'resize'])
+        figure.xaxis.axis_label = 'frequency'
+        figure.yaxis.axis_label = 'fft'
+        figure.line(x, fft, alpha=ALPHA)
+
+        plots.append(figure)
+
+    return plots
+
+def precision(data, time=TIME, events=EVENTS, clusters=LABEL, tolerance=DELTA):
+    known = {event for event in events}
+    total_clusters = data[clusters].max()
+
+    for i in range(total_clusters + 1):
+        cluster_index = (data[clusters] == i)
+        found = data.loc[cluster_index, time]
+
+        found_min = found.min() - tolerance
+        found_max = found.max() + tolerance
+
+        for event in known:
+            if found_min <= event and event <= found_max:
+                known.remove(event)
+                break
+
+    return (len(events) - len(known)) / float(total_clusters) if total_clusters > 0 else 0.0
+
+def recall(data, time=TIME, events=EVENTS, clusters=LABEL, tolerance=DELTA):
+    known = {event for event in events}
+    total_clusters = data[clusters].max()
+
+    for i in range(total_clusters + 1):
+        cluster_index = (data[clusters] == i)
+        found = data.loc[cluster_index, time]
+
+        found_min = found.min() - tolerance
+        found_max = found.max() + tolerance
+
+        for event in known:
+            if found_min <= event and event <= found_max:
+                known.remove(event)
+                break
+
+    return (len(events) - len(known)) / float(len(events)) if len(events) > 0 else 0.0
+
+def f1(precision, recall):
+    return 2 * (precision * recall) / (precision + recall) if precision + recall > 0 else 0.0
 
 if __name__ == '__main__':
     plots = []
-    # grid  = sklearn.grid_search.ParameterGrid({
-    #     'step':        range(1,  6),
-    #     'eps':         range(12, 97, 2),
-    #     'minPoints':   range(6,  193, 2),
-    #     'outliers':    range(1,  4),
-    #     'filter_size': range(24, 193, 12)
-    # })
-    #
-    # handle = open('f1_one_step.txt', 'w')
-    # for parameters in grid:
-    #     if parameters['minPoints'] > parameters['eps'] * 2: continue
-    #
-    #     data = read_data(FILE)
-    #     data = filter_data(data, VARS, **parameters)
-    #     data = one_step_differences(data, FILTER_VARS, **parameters)
-    #     data = cluster_outliers_combined(data, FS_VARS, **par.reshape(-1)ameters)
-    #
-    #     prec = precision(data)
-    #     reca = recall(data)
-    #     f = f1(prec, reca)
-    #     text = "%s %f %f %f\n" % (parameters, f, prec, reca,)
-    #     print text,
-    #     handle.write(text)
-    # handle.close()
+    grid  = sklearn.grid_search.ParameterGrid({
+        'step':        range(1,  4),
+        'eps':         range(12, 49, 2),
+        'minPoints':   range(6,  97, 2),
+        'outliers':    range(1,  4),
+        'filter_size': range(24, 97, 12)
+    })
 
-    data = read_data(FILE)
-    data = filter_data(data, VARS)
-    data = one_step_differences(data, FILTER_VARS)
-    data = cluster_outliers_combined(data, FS_VARS)
+    handle = open('f1_one_step.txt', 'w')
+    total  = len(grid)
 
-    #plot_matplot_variables(data, TIME, VARS)
-    #plot_matplot_variables(data, TIME, FILTER_VARS)
-    #plot_matplot_standard_deviations(data, TIME, FS_VARS)
-    plot_matplot_clusters(data, TIME, FS_VARS)
+    for index, parameters in enumerate(grid):
+        print '%d/%d' % (index, total,)
+        if parameters['minPoints'] > parameters['eps'] * 2: continue
+
+        data = read_data(FILE)
+        data = filter_data(data, VARS, **parameters)
+        data = one_step_differences(data, FILTER_VARS, **parameters)
+        data = cluster_outliers_combined(data, FS_VARS, **parameters)
+
+        prec = precision(data)
+        reca = recall(data)
+        f = f1(prec, reca)
+        text = '%s %f %f %f\n' % (parameters, f, prec, reca,)
+        print text,
+        handle.write(text)
+    handle.close()
+
+    # data = read_data(FILE)
+    # data = filter_data(data, VARS)
+    # data = one_step_differences(data, FILTER_VARS)
+    # data = cluster_outliers_combined(data, FS_VARS)
+
+    # plot_matplot_variables(data, TIME, VARS)
+    # plot_matplot_variables(data, TIME, FILTER_VARS)
+    # plot_matplot_standard_deviations(data, TIME, FS_VARS)
+    # plot_matplot_clusters(data, TIME, FS_VARS)
 
     # plots.append(plot_variables(data, TIME, VARS))
     # plots.append(plot_fft(data, VARS))
