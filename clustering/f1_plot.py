@@ -54,35 +54,11 @@ def f1_surface_plot(best_values):
     ax.view_init(elev=15, azim=-120)
 
 if __name__ == '__main__':
-    # best_values_0 = index_values(read_data('f1_train_fold_0.txt'))
-    # best_values_1 = index_values(read_data('f1_train_fold_1.txt'))
-    # best_values_2 = index_values(read_data('f1_train_fold_2.txt'))
-    #
-    # averaged = {}
-    # for parameter in best_values_2:
-    #     averaged[parameter] = best_values_2[parameter]###np.mean([best_values_0[parameter], best_values_1[parameter], best_values_2[parameter]])
-    #
-    # top = sorted(zip(averaged.values(), averaged.keys()), reverse=True)[:10]
-    # import pprint; pprint.pprint(top)
+    fold = 2
 
-    # best_values_0 = index_values(read_data('f1_test_fold_0.txt'))
-    # best_values_1 = index_values(read_data('f1_test_fold_1.txt'))
-    best_values_2 = index_values(read_data('f1_test_fold_2.txt'))
+    indexed_values = index_values(read_data('f1_test_fold_%d.txt' % fold))
+    best_values = flatten_eps_min(indexed_values)
+    f1_surface_plot(best_values)
 
-    averaged = {}
-    for parameter in best_values_2:
-        averaged[parameter] = best_values_2[parameter]#np.mean([best_values_0[parameter], best_values_1[parameter], best_values_2[parameter]])
-
-    top = sorted(zip(averaged.values(), averaged.keys()), reverse=True)[:10]
-    import pprint; pprint.pprint(top)
-
-    # best_values = flatten_eps_min(best_values_2)
-    # f1_surface_plot(best_values)
-    # plt.savefig('f1_train.svg', format='svg', dpi=1200, bbox_inches='tight')
-    #
-    # best_values_2 = index_values(read_data('f1_test_fold_2.txt'))
-    # best_values = flatten_eps_min(best_values_2)
-    # f1_surface_plot(best_values)
-    # plt.savefig('f1_test.svg', format='svg', dpi=1200, bbox_inches='tight')
-    #
-    # plt.show()
+    # plt.savefig('f1_test_fold_%d.svg' % fold, format='svg', dpi=1200, bbox_inches='tight')
+    plt.show()

@@ -18,19 +18,18 @@ import matplotlib.patches
 import matplotlib.dates
 plt.style.use('ggplot')
 
-FILE      = 'preprocessed_extended.tab'
-PLOT      = 'clustering.html'
-
+FILE        = '../data/preprocessed.tab'
+PLOT        = 'clustering.html'
 TIME        = 'datetime'
 FORMATTED   = 'formatted'
-VARS        = ['temperature', 'salinity', 'oxygen']
+VARIABLES   = ['temperature', 'salinity', 'oxygen']
 FILTER      = 'filter'
 OUTLIER     = 'outlier'
-FILTER_VARS = ['%s_%s' % (var, FILTER,) for var in VARS]
+FILTER_VARS = ['%s_%s' % (var, FILTER,) for var in VARIABLES]
 STEP        = 'step'
-STEP_VARS   = ['%s_%s' % (var, STEP,) for var in VARS]
-FS_VARS     = ['%s_%s_%s' % (var, FILTER, STEP,) for var in VARS]
-OUT_VARS    = ['%s_%s' % (var, OUTLIER) for var in VARS]
+STEP_VARS   = ['%s_%s' % (var, STEP,) for var in VARIABLES]
+FS_VARS     = ['%s_%s_%s' % (var, FILTER, STEP,) for var in VARIABLES]
+OUT_VARS    = ['%s_%s' % (var, OUTLIER) for var in VARIABLES]
 LABEL       = 'labels'
 DATE_FORM   = '%Y-%m-%d %H:%M:%S'
 UNITS       = [u'in \u00B0C', u'', u'in % air saturation']
@@ -359,6 +358,8 @@ def f1(precision, recall):
     return (2 * precision * recall) / float(precision + recall) if precision + recall > 0 else 0.0
 
 if __name__ == '__main__':
+    # Grid search, uncomment for full model search
+
     # grid  = sklearn.grid_search.ParameterGrid({
     #     'step':        range(1,  4),
     #     'eps':         range(12, 49, 2),
@@ -367,8 +368,11 @@ if __name__ == '__main__':
     #     'filter_size': range(24, 97, 12)
     # })
     #
-    # train_handle = open('f1_train_fold_1.txt', 'w')
-    # test_handle  = open('f1_test_fold_1.txt', 'w')
+    # fold  = 1
+    # folds = 3
+    #
+    # train_handle = open('f1_train_fold_%d.txt' % fold, 'w')
+    # test_handle  = open('f1_test_fold_%d.txt' % fold, 'w')
     # total        = len(grid)
     #
     # for index, parameters in enumerate(grid):
@@ -378,7 +382,7 @@ if __name__ == '__main__':
     #     data = read_data(FILE)
     #     data = filter_data(data, VARS, **parameters)
     #     data = one_step_differences(data, FILTER_VARS, **parameters)
-    #     train, test, train_events, test_events = split(data, test_fold=1, folds=3)
+    #     train, test, train_events, test_events = split(data, test_fold=fold, folds=folds)
     #
     #     train           = cluster_outliers_combined(train, FS_VARS, **parameters)
     #     train_precision = precision(train, train_events)
@@ -400,25 +404,23 @@ if __name__ == '__main__':
     # test_handle.close()
 
     data = read_data(FILE)
-    data = filter_data(data, VARS)
+    data = filter_data(data, VARIABLES)
     data = one_step_differences(data, FILTER_VARS)
     data = cluster_outliers_combined(data, FS_VARS)
-    #
-    # train, test, train_e, test_e = split(data, test_fold=1, folds=3)
-    #
-    # p, r = precision(data), recall(data)
-    # f = f1(p, r)
-    # print f, p, r
-    #
+
+    # matplot to generate standablone SVGs
+
     # plot_matplot_variables(data, TIME, VARS)
     # plot_matplot_variables(data, TIME, FILTER_VARS)
     # plot_matplot_standard_deviations(data, TIME, FS_VARS)
     # plot_matplot_clusters(data, TIME, FS_VARS)
 
+    # interactive bokeh plots
+
     plots = []
-    plots.append(plot_variables(data, TIME, VARS))
+    plots.append(plot_variables(data, TIME, VARIABLES))
     plots.append(plot_variables(data, TIME, FILTER_VARS))
     plots.append(plot_standard_deviations(data, TIME, FS_VARS))
     plots.append(plot_clusters(data, TIME, FILTER_VARS))
-    bokeh.plotting.output_file('foobar.html', title='Koljoefjord outlier detection')
+    bokeh.plotting.output_file(PLOT, title='Koljoefjord outlier detection')
     bokeh.plotting.show(bokeh.plotting.gridplot(plots))
