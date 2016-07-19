@@ -19,6 +19,7 @@ import matplotlib.dates
 plt.style.use('ggplot')
 
 FILE        = '../data/preprocessed.tab'
+EVENTS_FILE = '../data/events.tab'
 PLOT        = 'clustering.html'
 TIME        = 'datetime'
 FORMATTED   = 'formatted'
@@ -31,12 +32,12 @@ STEP_VARS   = ['%s_%s' % (var, STEP,) for var in VARIABLES]
 FS_VARS     = ['%s_%s_%s' % (var, FILTER, STEP,) for var in VARIABLES]
 OUT_VARS    = ['%s_%s' % (var, OUTLIER) for var in VARIABLES]
 LABEL       = 'labels'
-DATE_FORM   = '%Y-%m-%d %H:%M:%S'
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 UNITS       = [u'in \u00B0C', u'', u'in % air saturation']
 
-WIDTH      = 620
-HEIGHT     = 300
-ALPHA      = 0.5
+WIDTH  = 620
+HEIGHT = 300
+ALPHA  = 0.5
 
 MEASURES_PER_DAY = 96
 STEP_DIFFERENCE  = 2
@@ -45,82 +46,14 @@ EPS              = 20
 MIN_POINTS       = 38
 DELTA            = dt.timedelta(days=1)
 
-EVENTS = pd.to_datetime([
-    '15-09-2011 00:00:00',
-    '01-10-2011 00:00:00',
-    '07-10-2011 00:00:00',
-    '18-10-2011 00:00:00',
-    '10-12-2011 00:00:00',
-    '25-12-2011 00:00:00',
-    '20-01-2012 00:00:00',
-    '26-02-2012 12:00:00',
-    '15-03-2012 12:00:00',
-    '21-03-2012 00:00:00',
-    '06-04-2012 00:00:00',
-    '18-07-2012 02:40:00',
-    '24-07-2012 00:00:00',
-    '11-09-2012 10:20:00',
-    '04-01-2013 12:00:00',
-    '14-02-2013 00:00:00',
-    '19-03-2013 00:00:00',
-    '21-04-2013 00:20:00',
-    '24-04-2013 00:20:00',
-    '02-05-2013 13:00:00',
-    '07-05-2013 23:00:00',
-    '16-07-2013 17:40:00',
-    '21-08-2013 22:00:00',
-    '22-09-2013 01:20:00',
-    '24-09-2013 06:20:00',
-    '26-09-2013 23:00:00',
-    '29-09-2013 14:40:00',
-    '03-10-2013 10:00:00',
-    '07-10-2013 08:00:00',
-    '11-10-2013 10:20:00',
-    '16-10-2013 10:40:00',
-    '22-10-2013 02:00:00',
-    '06-12-2013 21:40:00', # begin fouling
-    '14-12-2013 08:00:00',
-    '16-12-2013 06:40:00',
-    '18-12-2013 12:00:00',
-    '25-12-2013 20:00:00',
-    '01-01-2014 01:20:00',
-    '18-02-2014 13:40:00', # end fouling
-    '06-03-2014 08:40:00',
-    '26-03-2014 18:00:00',
-    '02-04-2013 11:40:00',
-    '05-06-2014 10:40:00', # question
-    '25-06-2014 13:00:00',
-    '02-09-2014 10:40:00', # oxygen sensor redeploy
-    '24-09-2014 03:20:00',
-    '28-09-2014 23:00:00',
-    '08-10-2014 22:20:00',
-    '18-10-2014 03:40:00',
-    '29-10-2014 08:40:00',
-    '11-12-2014 18:00:00',
-    '17-12-2014 16:20:00',
-    '21-12-2014 14:00:00',
-    '24-12-2014 22:40:00',
-    '30-12-2014 10:20:00',
-    '02-01-2015 18:40:00',
-    '19-01-2015 00:00:00',
-    '11-03-2015 07:20:00',
-    '23-03-2015 19:20:00',
-    '28-03-2015 08:20:00',
-    '10-04-2015 00:00:00',
-    '12-04-2015 19:40:00',
-    '09-05-2015 15:40:00',
-    '14-05-2015 23:40:00',
-    '19-05-2015 09:00:00',
-    '27-05-2015 07:40:00',
-    '30-05-2015 08:20:00',
-    '03-06-2015 15:40:00',
-    '08-07-2015 00:20:00'
-], format='%d-%m-%Y %H:%M:%S')
+def read_events(path):
+    events = pd.read_csv(path, sep='\t')
+    return pd.to_datetime(events[TIME], format=DATE_FORMAT)
 
 def read_data(path):
     data            = pd.read_csv(path, sep='\t')
-    data[TIME]      = pd.to_datetime(data[TIME], format=DATE_FORM)
-    data[FORMATTED] = data[TIME].dt.strftime(DATE_FORM)
+    data[TIME]      = pd.to_datetime(data[TIME], format=DATE_FORMAT)
+    data[FORMATTED] = data[TIME].dt.strftime(DATE_FORMAT)
 
     return data
 
@@ -143,7 +76,7 @@ def one_step_differences(data, variables, step=STEP_DIFFERENCE, **kwargs):
 
     return data
 
-def split(data, test_fold=2, folds=3, events=EVENTS):
+def split(data, events, test_fold=2, folds=3):
     items = len(data)
     fraction = 1.0 / folds
     start, end = int(max(0, test_fold * fraction) * items), int(min((test_fold + 1) * fraction, 1.0) * items)
@@ -278,7 +211,7 @@ def plot_standard_deviations(data, time, variables, outliers=OUTLIERS, formatted
         plots.append(figure)
     return plots
 
-def plot_clusters(data, time, variables, outliers=OUTLIERS, clusters=LABEL, formatted=FORMATTED, type='datetime', **kwargs):
+def plot_clusters(data, events, time, variables, outliers=OUTLIERS, clusters=LABEL, formatted=FORMATTED, type='datetime', **kwargs):
     plots = []
     for index, var in enumerate(variables):
         source = make_source(data, [time, var, formatted])
@@ -291,7 +224,7 @@ def plot_clusters(data, time, variables, outliers=OUTLIERS, clusters=LABEL, form
         data_min = data[var].min()
         data_max = data[var].max()
 
-        for event in EVENTS:
+        for event in events:
             figure.line([event, event], [data_min, data_max], color='black', alpha=ALPHA, line_dash='4 2')
 
         for i in range(0, data[clusters].max() + 1):
@@ -310,7 +243,7 @@ def plot_clusters(data, time, variables, outliers=OUTLIERS, clusters=LABEL, form
 
     return plots
 
-def precision(data, events=EVENTS, time=TIME, clusters=LABEL, tolerance=DELTA):
+def precision(data, events, time=TIME, clusters=LABEL, tolerance=DELTA):
     total_clusters = data[clusters].max()
 
     true_positives = 0
@@ -332,7 +265,7 @@ def precision(data, events=EVENTS, time=TIME, clusters=LABEL, tolerance=DELTA):
 
     return true_positives / float(true_positives + false_positives) if true_positives + false_positives > 0 else 0.0
 
-def recall(data, events=EVENTS, time=TIME, clusters=LABEL, tolerance=DELTA):
+def recall(data, events, time=TIME, clusters=LABEL, tolerance=DELTA):
     found_events = set()
     total_clusters = data[clusters].max()
     true_positives = 0
@@ -358,8 +291,9 @@ def f1(precision, recall):
     return (2 * precision * recall) / float(precision + recall) if precision + recall > 0 else 0.0
 
 if __name__ == '__main__':
-    # Grid search, uncomment for full model search
+    events = read_events(EVENTS_FILE)
 
+    # Grid search, uncomment for full model search
     # grid  = sklearn.grid_search.ParameterGrid({
     #     'step':        range(1,  4),
     #     'eps':         range(12, 49, 2),
@@ -382,7 +316,7 @@ if __name__ == '__main__':
     #     data = read_data(FILE)
     #     data = filter_data(data, VARS, **parameters)
     #     data = one_step_differences(data, FILTER_VARS, **parameters)
-    #     train, test, train_events, test_events = split(data, test_fold=fold, folds=folds)
+    #     train, test, train_events, test_events = split(data, events, test_fold=fold, folds=folds)
     #
     #     train           = cluster_outliers_combined(train, FS_VARS, **parameters)
     #     train_precision = precision(train, train_events)
@@ -409,18 +343,16 @@ if __name__ == '__main__':
     data = cluster_outliers_combined(data, FS_VARS)
 
     # matplot to generate standablone SVGs
-
     # plot_matplot_variables(data, TIME, VARS)
     # plot_matplot_variables(data, TIME, FILTER_VARS)
     # plot_matplot_standard_deviations(data, TIME, FS_VARS)
     # plot_matplot_clusters(data, TIME, FS_VARS)
 
     # interactive bokeh plots
-
     plots = []
     plots.append(plot_variables(data, TIME, VARIABLES))
     plots.append(plot_variables(data, TIME, FILTER_VARS))
     plots.append(plot_standard_deviations(data, TIME, FS_VARS))
-    plots.append(plot_clusters(data, TIME, FILTER_VARS))
+    plots.append(plot_clusters(data, events, TIME, FILTER_VARS))
     bokeh.plotting.output_file(PLOT, title='Koljoefjord outlier detection')
     bokeh.plotting.show(bokeh.plotting.gridplot(plots))
