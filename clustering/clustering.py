@@ -45,7 +45,7 @@ MEASURES_PER_DAY = 96
 STEP_DIFFERENCE  = 1
 OUTLIERS         = 1
 EPS              = 22
-MIN_POINTS       = 40
+MIN_POINTS       = 42
 DELTA            = dt.timedelta(days=2)
 
 def read_data(path):
@@ -145,24 +145,36 @@ def plot_matplot_standard_deviations(data, time, variables, outliers=OUTLIERS, f
         ax.autoscale_view()
         fig.savefig(var + '.svg', format='svg', dpi=1200, bbox_inches='tight')
 
-def plot_matplot_clusters(data, time, variables, outliers=OUT_VARS, label=LABEL, formatted=FORMATTED, type='datetime'):
+def plot_matplot_clusters(train, test, time, variables, outliers=OUT_VARS, label=LABEL, formatted=FORMATTED, type='datetime'):
     fig = plt.figure(figsize=(2 * 5.0, 2 * 2.0))
     ax  = fig.add_subplot(111)
     ax.set_xlabel('time')
     ax.set_ylabel(u'$\Delta$\u00B9 outliers')
     plt.yticks(range(3), [var.split('_')[0] for var in variables], rotation='vertical', fontsize=7)
 
-    clusters = set(data[LABEL])
+    clusters = set(train[label])
     for cluster in clusters:
         if cluster < 0: continue
-        clu = data[TIME][data[LABEL] == cluster]
+        clu = train[time][train[label] == cluster]
         x = matplotlib.dates.date2num(clu.min() + (clu.max() - clu.min()) / 2.0)
-        plt.axvline(x, color='#cc3300', lw=0)
+        plt.axvline(x, color='#cc3300', lw=0.5)
+
+    clusters = set(test[label])
+    for cluster in clusters:
+        if cluster < 0: continue
+        clu = test[time][test[label] == cluster]
+        x = matplotlib.dates.date2num(clu.min() + (clu.max() - clu.min()) / 2.0)
+        plt.axvline(x, color='#cc3300', lw=0.5)
 
     for index, var in enumerate(variables):
-        out = data[outliers[index]]
+        out = train[outliers[index]]
+        x_out = np.array(train[time][out])
+        y_out = np.full(len(x_out), index)
+        ax.scatter(x_out, y_out, color=bokeh.palettes.Spectral11[index], s=3)
 
-        x_out = np.array(data[time][out])
+    for index, var in enumerate(variables):
+        out = test[outliers[index]]
+        x_out = np.array(test[time][out])
         y_out = np.full(len(x_out), index)
         ax.scatter(x_out, y_out, color=bokeh.palettes.Spectral11[index], s=3)
 
@@ -252,8 +264,8 @@ def plot_matplot_predictions(train, test, train_events, test_events, time, varia
 
         # division train/test
         plt.axvspan(test[time].min(), test[time].max(), color='y', alpha=0.1, lw=0)
-        plt.figtext(0.565, 0.92, 'validation', size='small')
-        plt.figtext(0.66,  0.92, 'test', size='small')
+        plt.figtext(0.635, 0.92, 'validation', size='small')
+        plt.figtext(0.730, 0.92, 'test', size='small')
 
         fig.savefig(var + '_prediction.svg', format='svg', dpi=1200, bbox_inches='tight')
 
@@ -379,76 +391,74 @@ if __name__ == '__main__':
     events = events_complete[TIME]
 
     # Grid search, uncomment for full model search
-    grid  = sklearn.grid_search.ParameterGrid({
-        'step':        range(1,  4),
-        'eps':         range(12, 61, 2),
-        'minPoints':   range(6,  121, 2),
-        'filter_size': range(24, 121, 6),
-        'outliers':    np.arange(0.25, 3.25, 0.25)
-    })
+    # grid  = sklearn.grid_search.ParameterGrid({
+    #     'step':        range(1,  4),
+    #     'eps':         range(12, 61, 2),
+    #     'minPoints':   range(6,  121, 2),
+    #     'filter_size': range(24, 121, 12),
+    #     'outliers':    np.arange(0.25, 2.25, 0.25)
+    # })
+    #
+    # fold  = 3
+    # folds = 4
+    #
+    # comm = MPI.COMM_WORLD
+    # rank = comm.rank
+    # size = comm.size
+    #
+    # train_handle = open('f1_train_fold_%d_par_%d.txt' % (fold, rank,), 'w')
+    # test_handle  = open('f1_test_fold_%d_par_%d.txt' % (fold, rank,), 'w')
+    # total        = len(grid)
+    #
+    # offset = float(total) / size * rank
+    # end = float(total) / size * (rank + 1)
+    # raw_data = read_data(FILE)
+    #
+    # for index, parameters in enumerate(grid):
+    #     if index < offset: continue
+    #     if index > end: break
+    #
+    #     print '%d/%d' % (index, total,)
+    #     if parameters['minPoints'] > parameters['eps'] * 2: continue
+    #
+    #     data = raw_data.copy(deep=True)
+    #     data = filter_data(data, VARIABLES, **parameters)
+    #     data = one_step_differences(data, FILTER_VARS, **parameters)
+    #     train, test, train_events, test_events = split(data, events, test_fold=fold, folds=folds)
+    #
+    #     train           = cluster_outliers_combined(train, FS_VARS, **parameters)
+    #     train_precision = precision(train, train_events)
+    #     train_recall    = recall(train, train_events)
+    #     train_f1        = f1(train_precision, train_recall)
+    #     train_text = '%s %f %f %f\n' % (parameters, train_f1, train_precision, train_recall,)
+    #     train_handle.write(train_text)
+    #
+    #     test           = cluster_outliers_combined(test, FS_VARS, **parameters)
+    #     test_precision = precision(test, test_events)
+    #     test_recall    = recall(test, test_events)
+    #     test_f1        = f1(test_precision, test_recall)
+    #     test_text = '%s %f %f %f\n' % (parameters, test_f1, test_precision, test_recall,)
+    #     test_handle.write(test_text)
+    #
+    # train_handle.close()
+    # test_handle.close()
 
-    fold  = 1
-    folds = 3
+    # Single model with above set parameters
 
-    comm = MPI.COMM_WORLD
-    rank = comm.rank
-    size = comm.size
-
-    train_handle = open('f1_train_fold_%d_par_%d.txt' % (fold, rank,), 'w')
-    test_handle  = open('f1_test_fold_%d_par_%d.txt' % (fold, rank,), 'w')
-    total        = len(grid)
-
-    offset = float(total) / size * rank
-    end = float(total) / size * (rank + 1)
-    print 'Hi', rank, offset, end
-
-    raw_data = read_data(FILE)
-
-    for index, parameters in enumerate(grid):
-        if index < offset: continue
-        if index > end: break
-
-        print '%d/%d' % (index, total,)
-        if parameters['minPoints'] > parameters['eps'] * 2: continue
-
-        data = raw_data.copy(deep=True)
-        data = filter_data(data, VARIABLES, **parameters)
-        data = one_step_differences(data, FILTER_VARS, **parameters)
-        train, test, train_events, test_events = split(data, events, test_fold=fold, folds=folds)
-
-        train           = cluster_outliers_combined(train, FS_VARS, **parameters)
-        train_precision = precision(train, train_events)
-        train_recall    = recall(train, train_events)
-        train_f1        = f1(train_precision, train_recall)
-        train_text = '%s %f %f %f\n' % (parameters, train_f1, train_precision, train_recall,)
-        print 'train', train_text,
-        train_handle.write(train_text)
-
-        test           = cluster_outliers_combined(test, FS_VARS, **parameters)
-        test_precision = precision(test, test_events)
-        test_recall    = recall(test, test_events)
-        test_f1        = f1(test_precision, test_recall)
-        test_text = '%s %f %f %f\n' % (parameters, test_f1, test_precision, test_recall,)
-        print 'test', test_text,
-        test_handle.write(test_text)
-
-    train_handle.close()
-    test_handle.close()
-
-    # data = read_data(FILE)
-    # data = filter_data(data, VARIABLES)
-    # data = one_step_differences(data, FILTER_VARS)
-    # train, test, train_events, test_events = split(data, events, test_fold=2, folds=3)
-    # train = cluster_outliers_combined(train, FS_VARS)
-    # test  = cluster_outliers_combined(test, FS_VARS)
+    data = read_data(FILE)
+    data = filter_data(data, VARIABLES)
+    data = one_step_differences(data, FILTER_VARS)
+    train, test, train_events, test_events = split(data, events, test_fold=3, folds=4)
+    train = cluster_outliers_combined(train, FS_VARS)
+    test  = cluster_outliers_combined(test, FS_VARS)
 
     # matplot to generate standablone SVGs
     # plot_matplot_variables(data, TIME, VARIABLES)
     # plot_matplot_variables(data, TIME, FILTER_VARS)
     # plot_matplot_standard_deviations(data, TIME, FS_VARS)
     # plot_matplot_variables_and_events(data, events_complete, TIME, FILTER_VARS)
-    # plot_matplot_clusters(data, TIME, FS_VARS)
-    # plot_matplot_predictions(train, test, train_events, test_events, TIME, FILTER_VARS)
+    plot_matplot_clusters(train, test, TIME, FS_VARS)
+    plot_matplot_predictions(train, test, train_events, test_events, TIME, FILTER_VARS)
 
     # interactive bokeh plots
     # plots = []

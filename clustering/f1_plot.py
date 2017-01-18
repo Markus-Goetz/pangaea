@@ -49,17 +49,21 @@ def f1_surface_plot(best_values):
     ax.set_zlabel('F1 score')
     ax.plot_surface(m_coords, e_coords, f, rstride=2, cstride=2, cmap=matplotlib.cm.coolwarm, antialiased=True, alpha=0.7)
 
-    ax.view_init(elev=15, azim=-120)
+    ax.view_init(elev=25, azim=-120)
 
 if __name__ == '__main__':
-    fold = 2
+    fold = 3
 
-    indexed_train_values = index_values(read_data('f1_train_fold_%d.txt' % fold))
+    indexed_train_values = {}
+    for core in range(4):
+        indexed_train_values.update(index_values(read_data('f1_train_fold_%d_par_%d.txt' % (fold, core,))))
     flattened_train_values = flatten_eps_min(indexed_train_values)
     f1_surface_plot(flattened_train_values)
     plt.savefig('f1_train_fold_%d.svg' % fold, format='svg', dpi=1200, bbox_inches='tight')
 
-    indexed_test_values = index_values(read_data('f1_test_fold_%d.txt' % fold))
+    indexed_test_values = {}
+    for core in range(4):
+        indexed_test_values.update(index_values(read_data('f1_test_fold_%d_par_%d.txt' % (fold, core,))))
     flattened_test_values = flatten_eps_min(indexed_test_values)
     f1_surface_plot(flattened_test_values)
     plt.savefig('f1_test_fold_%d.svg' % fold, format='svg', dpi=1200, bbox_inches='tight')
